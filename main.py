@@ -1,5 +1,8 @@
+from datetime import date
+
+from pyspark.ml.feature import Tokenizer
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import collect_list, desc, col
+from pyspark.sql.functions import collect_list, desc, col, current_date, add_months, unix_timestamp
 
 spark = SparkSession \
     .builder \
@@ -9,22 +12,28 @@ spark = SparkSession \
 
 mnm_file = "data/full.csv"
 
-mnm_df = spark.read.format("csv") \
+df = spark.read.format("csv") \
     .option("header", "true") \
     .option("inferSchema", "true") \
     .load(mnm_file)
 
 def exo1():
     print("| exo 1 |")
+    # tokenizer = Tokenizer(inputCol="message", outputCol="tokens")
+    # tokens = tokenizer.transform(mnm_df)
+    # tokens.show(truncate=False)
 
-    mnm_df.groupby("repo").count().filter("repo is not NULL").sort(desc("count")).limit(10).show(truncate=False)
+    # mnm_df.select("message").filter("message is not NULL").show(truncate=False)
+
+    # df.groupby("repo").count().filter("repo is not NULL").sort(desc("count")).limit(10).show(truncate=False)
 
     return input("Souhaitez-vous avancer à l excerice suivant ? (0 pour exit | n importe quelle touche pour continuer) : ")
 
 def exo2():
     print("| exo 2 |")
 
-    mnm_df.groupby("repo", "author").count().filter("repo == 'apache/spark'").sort(desc("count")).limit(1).show(truncate=False)
+
+    # df.groupby("repo", "author").count().filter("repo == 'apache/spark'").sort(desc("count")).limit(1).show(truncate=False)
 
     return input("Souhaitez-vous avancer à l excerice suivant ? (0 pour exit | n importe quelle touche pour continuer) : ")
 
@@ -32,14 +41,25 @@ def exo3():
     # La request :
     print("| exo 3 |")
 
-    # TODO : print|show la request
+    today = date.today()
+    # print("Today's date:", today)
+    # current_timestamp
+    # df.show(truncate=False)
+    # df.groupby("repo", "author", "date")\
+    #     .count()\
+    #     .filter("repo == 'apache/spark'")\
+    #     .sort(unix_timestamp(col("date"), "MMM d hh:mm:ss yyyy Z").cast("timestamp")).show(truncate=False)
+
+    df.select("repo", "author", "date")\
+        .where(col("repo") == "apache/spark")\
+        .sort(desc(unix_timestamp(col("date"), "MMM d hh:mm:ss yyyy Z").cast("timestamp"))).show(truncate=False)
 
     return input("Souhaitez-vous avancer à l excerice suivant ? (0 pour exit | n importe quelle touche pour continuer) : ")
 
 def exo4():
     print("| exo 4 |")
 
-    # TODO : print|show la request
+
 
     return
 
