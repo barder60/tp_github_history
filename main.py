@@ -1,4 +1,5 @@
 from pyspark.sql import SparkSession
+from pyspark.sql.functions import collect_list, desc, col
 
 spark = SparkSession \
     .builder \
@@ -16,15 +17,14 @@ mnm_df = spark.read.format("csv") \
 def exo1():
     print("| exo 1 |")
 
-    # TODO : print|show la request
+    mnm_df.groupby("repo").count().filter("repo is not NULL").sort(desc("count")).limit(10).show(truncate=False)
 
     return input("Souhaitez-vous avancer à l excerice suivant ? (0 pour exit | n importe quelle touche pour continuer) : ")
 
 def exo2():
-    # La request :
     print("| exo 2 |")
 
-    # TODO : print|show la request
+    mnm_df.groupby("repo", "author").count().filter("repo == 'apache/spark'").sort(desc("count")).limit(1).show(truncate=False)
 
     return input("Souhaitez-vous avancer à l excerice suivant ? (0 pour exit | n importe quelle touche pour continuer) : ")
 
