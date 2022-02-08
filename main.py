@@ -1,7 +1,8 @@
-from pyspark.ml.feature import Tokenizer
+from pyspark.ml.feature import Tokenizer, StopWordsRemover
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import desc, col, add_months, unix_timestamp, current_timestamp, \
-    when
+    when, udf, explode
+from pyspark.sql.types import IntegerType
 
 spark = SparkSession \
     .builder \
@@ -25,9 +26,8 @@ def exo1():
     # tokens = tokenizer.transform(df)
     # tokens.show(truncate=False)
 
-    df.select("message").filter("message is not NULL").show(truncate=False)
-
     df.groupby("repo").count().filter("repo is not NULL").sort(desc("count")).limit(10).show(truncate=False)
+
     return input(
         "Souhaitez-vous avancer à l excerice suivant ? (0 pour exit | n importe quelle touche pour continuer) : ")
 
@@ -47,7 +47,7 @@ def exo3():
     print("| exo 3 |")
 
     len_of_date_format = len("EEE MMM dd HH:mm:ss YYYY") - 4
-    last_month_to_search = 12
+    last_month_to_search = 24
     date_to_compare = add_months(current_timestamp(), -last_month_to_search).cast("timestamp").cast("long")
 
     df.select("repo", "author", "date") \
@@ -76,18 +76,35 @@ def exo3():
 def exo4():
     print("| exo 4 |")
 
+    df_words = df.select('message')
+    tokenizer = Tokenizer(inputCol="message", outputCol="words")
+    df_tokenized = tokenizer.transform(df_words)
+
+    df_invalid_words = spark.read.text("./data/englishST.txt")
+
+    invalid_words = [row['value'] for row in df_invalid_words.collect()]
+
+    remover = StopWordsRemover(stopWords=invalid_words, inputCol="words", outputCol="messageFiltred")
+
+    df_filtred = remover.transform(df_tokenized).select('messageFiltred')
+
+    df_filtred.show()
+
+    # df_filtred.withColumn("test", explode('messageFiltred')).select('test').limit(336).show(n=336)
+
+
     return
 
 
 def exos():
-    if exo1() == 0:
-        exit()
-
-    if exo2() == 0:
-        exit()
-
-    if exo3() == 0:
-        exit()
+    # if exo1() == 0:
+    #     exit()
+    #
+    # if exo2() == 0:
+    #     exit()
+    #
+    # if exo3() == 0:
+    #     exit()
 
     if exo4() == 0:
         exit()
