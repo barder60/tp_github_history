@@ -1,14 +1,21 @@
 from pyspark.ml.feature import Tokenizer, StopWordsRemover
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import desc, col, add_months, unix_timestamp, current_timestamp, \
-    when, udf, explode
+    when, udf, explode, split, trim, lower, regexp_replace
 from pyspark.sql.types import IntegerType
 
 spark = SparkSession \
     .builder \
-    .appName("tp_github_history") \
-    .master("local[*]") \
+    .appName("tp_github_history")\
+    .config("spark.task.cpus", 4)\
+    .config("spark.dynamicAllocation.enabled", True)\
+    .config("spark.dynamicAllocation.minExecutors", 2)\
+    .config("spark.dynamicAllocation.maxExecutors", 5)\
+    .config("spark.executor.memory", "8g")\
+    .config("spark.executor.cores", 4) \
+    .master("local[*]")\
     .getOrCreate()
+
 
 mnm_file = "data/full.csv"
 
@@ -77,18 +84,26 @@ def exo4():
     print("| exo 4 |")
 
     df_words = df.select('message')
-    tokenizer = Tokenizer(inputCol="message", outputCol="words")
-    df_tokenized = tokenizer.transform(df_words)
+    # tokenizer = Tokenizer(inputCol="message", outputCol="words")
+    # df_tokenized = tokenizer.transform(df_words)
+    #
+    # df_invalid_words = spark.read.text("./data/englishST.txt")
+    #
+    # invalid_words = [row['value'] for row in df_invalid_words.collect()]
+    #
+    # remover = StopWordsRemover(stopWords=invalid_words, inputCol="words", outputCol="messageFiltred")
+    #
+    # df_filtred = remover.transform(df_tokenized).select('messageFiltred')
 
-    df_invalid_words = spark.read.text("./data/englishST.txt")
+    def removePunctuation(column):
+        removedSpecialChar = trim(lower(regexp_replace(column, '\W+', ' ').alias('message')))
+        return regexp_replace(removedSpecialChar, '[(\s\W)+]', ' ').alias('message')
 
-    invalid_words = [row['value'] for row in df_invalid_words.collect()]
+    df_wordsTrimmed = df_words.select(removePunctuation(col('message')))
 
-    remover = StopWordsRemover(stopWords=invalid_words, inputCol="words", outputCol="messageFiltred")
-
-    df_filtred = remover.transform(df_tokenized).select('messageFiltred')
-
-    df_filtred.show()
+    # df_wordsTrimmed.select(explode(split(col('message'), ' ')).alias('word')).show(n=500)
+    df_wordsTrimmed.select(explode(split(col('message'), ' ')).alias('word')).groupby('word').count().orderBy("count", ascending=False).limit(10).show()
+    # df_filtred.show()
 
     # df_filtred.withColumn("test", explode('messageFiltred')).select('test').limit(336).show(n=336)
 
