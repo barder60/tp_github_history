@@ -63,7 +63,7 @@ def exo3():
         col("date").substr(5, len_of_date_format)
     ) \
         .withColumn(
-        "trim_date", when(unix_timestamp(col("substr_date"), "MMM d HH:mm:ss yyyy "),
+        "trim_date", when(unix_timestamp(col("substr_date"), "MMM d HH:mm:ss yyyy ").isNotNull(),
                           unix_timestamp(col("substr_date"), "MMM d HH:mm:ss yyyy "))
             .when(unix_timestamp(col("substr_date"), "MMM dd HH:mm:ss yyyy").isNotNull(),
                   unix_timestamp(col("substr_date"), "MMM dd HH:mm:ss yyyy"))
@@ -100,14 +100,14 @@ def exo4():
 
 
 def exos():
-    # if exo1() == 0:
-    #     exit()
-    #
-    # if exo2() == 0:
-    #     exit()
-    #
-    # if exo3() == 0:
-    #     exit()
+    if exo1() == 0:
+        exit()
+
+    if exo2() == 0:
+        exit()
+
+    if exo3() == 0:
+        exit()
 
     if exo4() == 0:
         exit()
