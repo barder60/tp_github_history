@@ -1,7 +1,7 @@
 from pyspark.ml.feature import Tokenizer, StopWordsRemover
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import desc, col, add_months, unix_timestamp, current_timestamp, \
-    when, udf, explode, split, trim, lower, regexp_replace
+    when, udf, explode, split, trim, lower, regexp_replace, length
 from pyspark.sql.types import IntegerType
 
 spark = SparkSession \
@@ -99,10 +99,32 @@ def exo4():
         removedSpecialChar = trim(lower(regexp_replace(column, '\W+', ' ').alias('message')))
         return regexp_replace(removedSpecialChar, '[(\s\W)+]', ' ').alias('message')
 
+    # def word_count(str):
+    #     counts = dict()
+    #     words = str.split(' ')
+    #
+    #     print(words)
+    #     for word in words:
+    #         if word in counts:
+    #             counts[word] += 1
+    #         else:
+    #             counts[word] = 1
+    #
+    #     print(counts)
+    #     return counts
+    #
     df_wordsTrimmed = df_words.select(removePunctuation(col('message')))
 
-    # df_wordsTrimmed.select(explode(split(col('message'), ' ')).alias('word')).show(n=500)
-    df_wordsTrimmed.select(explode(split(col('message'), ' ')).alias('word')).groupby('word').count().orderBy("count", ascending=False).limit(10).show()
+    # df_wordsTrimmed = df_words.select(removePunctuation(col('message')))
+    #
+    # rddWords = df_wordsTrimmed.rdd.take(5)
+    # print(rddWords)
+
+    response4 = df_wordsTrimmed.select(explode(split(col('message'), ' ')).alias('message'))\
+        .filter(length(col('message')) > 2).groupBy('message').count()
+
+    response4.show()
+    # df_wordsTrimmed.select(explode(split(col('message'), ' ')).alias('word')).groupby('word').count().orderBy("count", ascending=False).limit(10).show()
     # df_filtred.show()
 
     # df_filtred.withColumn("test", explode('messageFiltred')).select('test').limit(336).show(n=336)
