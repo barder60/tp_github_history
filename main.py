@@ -6,16 +6,15 @@ from pyspark.sql.types import IntegerType
 
 spark = SparkSession \
     .builder \
-    .appName("tp_github_history")\
-    .config("spark.task.cpus", 4)\
-    .config("spark.dynamicAllocation.enabled", True)\
-    .config("spark.dynamicAllocation.minExecutors", 2)\
-    .config("spark.dynamicAllocation.maxExecutors", 5)\
-    .config("spark.executor.memory", "8g")\
+    .appName("tp_github_history") \
+    .config("spark.task.cpus", 4) \
+    .config("spark.dynamicAllocation.enabled", True) \
+    .config("spark.dynamicAllocation.minExecutors", 2) \
+    .config("spark.dynamicAllocation.maxExecutors", 5) \
+    .config("spark.executor.memory", "8g") \
     .config("spark.executor.cores", 4) \
-    .master("local[*]")\
+    .master("local[*]") \
     .getOrCreate()
-
 
 mnm_file = "data/full.csv"
 
@@ -64,7 +63,7 @@ def exo3():
         col("date").substr(5, len_of_date_format)
     ) \
         .withColumn(
-        "trim_date", when(unix_timestamp(col("substr_date"), "MMM d HH:mm:ss yyyy ").isNotNull(),
+        "trim_date", when(unix_timestamp(col("substr_date"), "MMM d HH:mm:ss yyyy "),
                           unix_timestamp(col("substr_date"), "MMM d HH:mm:ss yyyy "))
             .when(unix_timestamp(col("substr_date"), "MMM dd HH:mm:ss yyyy").isNotNull(),
                   unix_timestamp(col("substr_date"), "MMM dd HH:mm:ss yyyy"))
@@ -84,52 +83,19 @@ def exo4():
     print("| exo 4 |")
 
     df_words = df.select('message')
-    # tokenizer = Tokenizer(inputCol="message", outputCol="words")
-    # df_tokenized = tokenizer.transform(df_words)
-    #
-    # df_invalid_words = spark.read.text("./data/englishST.txt")
-    #
-    # invalid_words = [row['value'] for row in df_invalid_words.collect()]
-    #
-    # remover = StopWordsRemover(stopWords=invalid_words, inputCol="words", outputCol="messageFiltred")
-    #
-    # df_filtred = remover.transform(df_tokenized).select('messageFiltred')
+    df_invalid_words = spark.read.text("./data/englishST.txt")
+    invalid_words = [row['value'] for row in df_invalid_words.collect()]
 
     def removePunctuation(column):
         removedSpecialChar = trim(lower(regexp_replace(column, '\W+', ' ').alias('message')))
         return regexp_replace(removedSpecialChar, '[(\s\W)+]', ' ').alias('message')
 
-    # def word_count(str):
-    #     counts = dict()
-    #     words = str.split(' ')
-    #
-    #     print(words)
-    #     for word in words:
-    #         if word in counts:
-    #             counts[word] += 1
-    #         else:
-    #             counts[word] = 1
-    #
-    #     print(counts)
-    #     return counts
-    #
     df_wordsTrimmed = df_words.select(removePunctuation(col('message')))
 
-    # df_wordsTrimmed = df_words.select(removePunctuation(col('message')))
-    #
-    # rddWords = df_wordsTrimmed.rdd.take(5)
-    # print(rddWords)
+    response4 = df_wordsTrimmed.select(explode(split(col('message'), ' ')).alias('message')) \
+        .filter(col("message").isin(invalid_words) == False).groupBy('message').count().sort("count", ascending=False)
 
-    response4 = df_wordsTrimmed.select(explode(split(col('message'), ' ')).alias('message'))\
-        .filter(length(col('message')) > 2).groupBy('message').count()
-
-    response4.show()
-    # df_wordsTrimmed.select(explode(split(col('message'), ' ')).alias('word')).groupby('word').count().orderBy("count", ascending=False).limit(10).show()
-    # df_filtred.show()
-
-    # df_filtred.withColumn("test", explode('messageFiltred')).select('test').limit(336).show(n=336)
-
-
+    response4.show(n=10)
     return
 
 
